@@ -90,6 +90,7 @@
       text-shadow: 0 0 8px rgba(0, 242, 254, 0.8);
     }
 
+    /* SABİT KD ROZETİ (1.35) */
     .kd-badge {
       background: rgba(0, 255, 163, 0.15);
       border: 1px solid rgba(0, 255, 163, 0.8);
@@ -149,7 +150,7 @@
     <div class="info-container">
       <div class="top-row">
         <div class="player-name" id="player">c3m00d#WoW</div>
-        <div class="kd-badge" id="kd-val">KD: --</div>
+        <div class="kd-badge">KD: 1.35</div>
       </div>
 
       <div class="rank-title" id="rank-text">
@@ -198,27 +199,14 @@
       } catch (e) { console.error("Rank Error:", e); }
     }
 
-    async function fetchStats() {
+    async function fetchMatchTracker() {
       try {
-        const res = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}?filter=competitive&size=5`, {
+        const res = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}?filter=competitive&size=1`, {
           headers: { "Authorization": API_KEY }
         });
         if (res.ok) {
           const json = await res.json();
           if (json && json.data && json.data.length > 0) {
-            let totalKills = 0, totalDeaths = 0;
-            json.data.forEach(m => {
-              const me = m.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
-              if (me && me.stats) {
-                totalKills += me.stats.kills || 0;
-                totalDeaths += me.stats.deaths || 0;
-              }
-            });
-
-            if (totalDeaths > 0) {
-              document.getElementById('kd-val').innerText = `KD: ${(totalKills / totalDeaths).toFixed(2)}`;
-            }
-
             const latestMatch = json.data[0];
             const matchId = latestMatch.metadata?.matchid;
 
@@ -244,14 +232,13 @@
             document.getElementById('losses').innerText = `${sessionLosses}L`;
           }
         }
-      } catch (e) { console.error("Stats Error:", e); }
+      } catch (e) { console.error("Match Error:", e); }
     }
 
-    // Bağımsız çalıştırma
     fetchRank();
-    fetchStats();
+    fetchMatchTracker();
     setInterval(fetchRank, 30000);
-    setInterval(fetchStats, 45000);
+    setInterval(fetchMatchTracker, 30000);
   </script>
 </body>
 </html>
