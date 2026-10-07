@@ -180,80 +180,78 @@
         const res = await fetch(`https://api.henrikdev.xyz/valorant/v1/mmr/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}`, {
           headers: { "Authorization": API_KEY }
         });
-        if (!res.ok) return;
-        const json = await res.json();
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.data) {
+            const tierName = json.data.currenttierpatched || "IMMORTAL";
+            const currentRR = json.data.ranking_in_tier ?? 0;
+            const iconUrl = json.data.images?.large || json.data.images?.small;
 
-        if (json && json.data) {
-          const tierName = json.data.currenttierpatched || "IMMORTAL";
-          const currentRR = json.data.ranking_in_tier ?? 0;
-          const iconUrl = json.data.images?.large || json.data.images?.small;
+            document.getElementById('rank-text').innerHTML = `${tierName.toUpperCase()} <span class="rr-tag" id="rr-val">${currentRR} RR</span>`;
+            if (iconUrl) document.getElementById('rank-img').src = iconUrl;
 
-          document.getElementById('rank-text').innerHTML = `${tierName.toUpperCase()} <span class="rr-tag" id="rr-val">${currentRR} RR</span>`;
-          if (iconUrl) document.getElementById('rank-img').src = iconUrl;
-
-          if (sessionStartRR === null) sessionStartRR = currentRR;
-          const diff = currentRR - sessionStartRR;
-          document.getElementById('rr-diff').innerText = `(${diff >= 0 ? '+' + diff : diff} RR)`;
+            if (sessionStartRR === null) sessionStartRR = currentRR;
+            const diff = currentRR - sessionStartRR;
+            document.getElementById('rr-diff').innerText = `(${diff >= 0 ? '+' + diff : diff} RR)`;
+          }
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Rank Error:", e); }
     }
 
     async function fetchStats() {
       try {
-        const res = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}?filter=competitive&size=15`, {
+        const res = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}?filter=competitive&size=5`, {
           headers: { "Authorization": API_KEY }
         });
-        if (!res.ok) return;
-        const json = await res.json();
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.data && json.data.length > 0) {
+            let totalKills = 0, totalDeaths = 0;
+            json.data.forEach(m => {
+              const me = m.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
+              if (me && me.stats) {
+                totalKills += me.stats.kills || 0;
+                totalDeaths += me.stats.deaths || 0;
+              }
+            });
 
-        if (json && json.data && json.data.length > 0) {
-          let totalKills = 0, totalDeaths = 0;
-          json.data.forEach(m => {
-            const me = m.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
-            if (me && me.stats) {
-              totalKills += me.stats.kills || 0;
-              totalDeaths += me.stats.deaths || 0;
+            if (totalDeaths > 0) {
+              document.getElementById('kd-val').innerText = `KD: ${(totalKills / totalDeaths).toFixed(2)}`;
             }
-          });
 
-          if (totalDeaths > 0) {
-            document.getElementById('kd-val').innerText = `KD: ${(totalKills / totalDeaths).toFixed(2)}`;
-          }
+            const latestMatch = json.data[0];
+            const matchId = latestMatch.metadata?.matchid;
 
-          const latestMatch = json.data[0];
-          const matchId = latestMatch.metadata?.matchid;
+            if (matchId && matchId !== lastMatchId) {
+              if (lastMatchId !== null) {
+                const me = latestMatch.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
+                if (me) {
+                  const myTeam = me.team ? me.team.toLowerCase() : '';
+                  const redWon = latestMatch.teams?.red?.has_won;
+                  const blueWon = latestMatch.teams?.blue?.has_won;
 
-          if (matchId && matchId !== lastMatchId) {
-            if (lastMatchId !== null) {
-              const me = latestMatch.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
-              if (me) {
-                const myTeam = me.team ? me.team.toLowerCase() : '';
-                const redWon = latestMatch.teams?.red?.has_won;
-                const blueWon = latestMatch.teams?.blue?.has_won;
-
-                if ((myTeam === 'red' && redWon) || (myTeam === 'blue' && blueWon)) {
-                  sessionWins++;
-                } else {
-                  sessionLosses++;
+                  if ((myTeam === 'red' && redWon) || (myTeam === 'blue' && blueWon)) {
+                    sessionWins++;
+                  } else {
+                    sessionLosses++;
+                  }
                 }
               }
+              lastMatchId = matchId;
             }
-            lastMatchId = matchId;
+
+            document.getElementById('wins').innerText = `${sessionWins}W`;
+            document.getElementById('losses').innerText = `${sessionLosses}L`;
           }
-
-          document.getElementById('wins').innerText = `${sessionWins}W`;
-          document.getElementById('losses').innerText = `${sessionLosses}L`;
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Stats Error:", e); }
     }
 
-    function update() {
-      fetchRank();
-      fetchStats();
-    }
-
-    update();
-    setInterval(update, 30000);
+    // Bağımsız çalıştırma
+    fetchRank();
+    fetchStats();
+    setInterval(fetchRank, 30000);
+    setInterval(fetchStats, 45000);
   </script>
 </body>
 </html>
