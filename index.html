@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Valorant Live Overlay</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Inter:wght@400;600;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Arka Plan %100 PNG Şeffaf */
+    html, body {
+      background: transparent !important;
+      background-color: rgba(0, 0, 0, 0) !important;
+      font-family: 'Inter', sans-serif;
+      padding: 15px;
+      overflow: hidden;
+    }
+
+    .overlay-card {
+      position: relative;
+      background: rgba(15, 23, 42, 0.85) !important;
+      border: 1.5px solid #00f2fe; /* NEON MAVİ ÇERÇEVE */
+      border-radius: 16px;
+      padding: 12px 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 18px rgba(0, 242, 254, 0.5);
+      min-width: 360px;
+    }
+
+    /* Sol taraftaki Immortal Kırmızısı Çizgi */
+    .overlay-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12%;
+      height: 76%;
+      width: 5px;
+      background: #ff4655;
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 12px #ff4655, 0 0 20px #ff4655;
+    }
+
+    /* Büyütülen & Öne Çıkarılan Rank Kutusu */
+    .rank-container {
+      position: relative;
+      width: 78px;
+      height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      border: 1px solid rgba(0, 242, 254, 0.4);
+    }
+
+    /* Rank arkasındaki güçlü parlama efekti */
+    .rank-container::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      background: radial-gradient(circle, rgba(255, 70, 85, 0.8) 0%, rgba(0, 242, 254, 0.4) 70%, transparent 100%);
+      filter: blur(14px);
+      z-index: 1;
+      animation: pulseGlow 2.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0% {
+        opacity: 0.6;
+        transform: scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1.2);
+        filter: blur(18px);
+      }
+    }
+
+    /* Büyütülen Rank Logosu */
+    .rank-icon {
+      position: relative;
+      z-index: 2;
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 18px rgba(255, 70, 85, 0.6));
+    }
+
+    .info-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-grow: 1;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Oyuncu İsmi - NEON MAVİ */
+    .player-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #00f2fe;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px rgba(0, 242, 254, 0.8), 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+
+    /* Rank İsmi - IMMORTAL KIRMIZISI */
+    .rank-title {
+      font-family: 'Teko', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #ff4655;
+      text-shadow: 0 0 10px rgba(255, 70, 85, 0.7);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* CANLI RR ALANI - PARLAK NEON YEŞİL */
+    .rr-tag {
+      color: #00ffa3 !important;
+      font-size: 21px;
+      margin-left: 4px;
+      text-shadow: 0 0 8px rgba(0, 255, 163, 0.8);
+    }
+
+    .bottom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* YAYIN SKORU METNİ - NEON MAVİ */
+    .wl-box {
+      color: #00f2fe;
+      text-shadow: 0 0 6px rgba(0, 242, 254, 0.6);
+    }
+    .win-text { 
+      color: #00ffa3; 
+      text-shadow: 0 0 6px rgba(0, 255, 163, 0.6);
+    }
+    .loss-text { 
+      color: #ff4655; 
+      text-shadow: 0 0 6px rgba(255, 70, 85, 0.6);
+    }
+    .rr-diff { 
+      color: #00ffa3; 
+      font-size: 12px; 
+      margin-left: 6px; 
+      text-shadow: 0 0 6px rgba(0, 255, 163, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HTML YAPISI SAYFA AÇILDIĞI AN RENDER EDİLİR -->
+  <div class="overlay-card">
+    <div class="rank-container">
+      <img id="rank-img" class="rank-icon" src="https://media.valorant-api.com/competitivetiers/5644414a-497b-4026-81da-163e3046322c/21/largeicon.png" alt="Rank">
+    </div>
+    
+    <div class="info-container">
+      <div class="top-row">
+        <div class="player-name" id="player">c3m00d#WoW</div>
+      </div>
+
+      <div class="rank-title" id="rank-text">
+        IMMORTAL <span class="rr-tag" id="rr-val">-- RR</span>
+      </div>
+
+      <div class="bottom-row">
+        <div class="wl-box">
+          Yayın Skoru: <span class="win-text" id="wins">0W</span> - <span class="loss-text" id="losses">0L</span>
+          <span class="rr-diff" id="rr-diff">(+0 RR)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "HDEV-3955e367-5388-45f8-8a65-cd1b3978fcd8"; 
+    const NAME = "c3m00d";
+    const TAG = "WoW";
+
+    let sessionStartRR = null;
+    let sessionWins = 0;
+    let sessionLosses = 0;
+    let lastMatchId = null;
+
+    // Timeout Korumalı Güvenli İstek Atıcı
+    function fetchWithTimeout(url, options = {}, timeout = 3000) {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]);
+    }
+
+    async function safeApiCall(url) {
+      try {
+        const res = await fetchWithTimeout(url, { headers: { "Authorization": API_KEY } }, 2500);
+        if (res.ok) return await res.json();
+      } catch (e) {
+        try {
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+          const proxyRes = await fetchWithTimeout(proxyUrl, { headers: { "Authorization": API_KEY } }, 2500);
+          if (proxyRes.ok) return await proxyRes.json();
+        } catch (err) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    async function fetchRank() {
+      const targetUrl = `https://api.henrikdev.xyz/valorant/v1/mmr/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}`;
+      const json = await safeApiCall(targetUrl);
+
+      if (json && json.data) {
+        const tierName = json.data.currenttierpatched || "IMMORTAL";
+        const currentRR = json.data.ranking_in_tier ?? 0;
+        const iconUrl = json.data.images?.large || json.data.images?.small;
+
+        document.getElementById('player').innerText = `${NAME}#${TAG}`;
+        document.getElementById('rank-text').innerHTML = `${tierName.toUpperCase()} <span class="rr-tag" id="rr-val">${currentRR} RR</span>`;
+
+        if (iconUrl) {
+          document.getElementById('rank-img').src = iconUrl;
+        }
+
+        if (sessionStartRR === null) sessionStartRR = currentRR;
+
+        const diff = currentRR - sessionStartRR;
+        document.getElementById('rr-diff').innerText = `(${diff >= 0 ? '+' + diff : diff} RR)`;
+      }
+    }
+
+    async function fetchMatchTracker() {
+      const targetUrl = `https://api.henrikdev.xyz/valorant/v3/matches/eu/${encodeURIComponent(NAME)}/${encodeURIComponent(TAG)}?filter=competitive&size=1`;
+      const json = await safeApiCall(targetUrl);
+
+      if (json && json.data && json.data.length > 0) {
+        const latestMatch = json.data[0];
+        const matchId = latestMatch.metadata?.matchid;
+
+        if (matchId && matchId !== lastMatchId) {
+          if (lastMatchId !== null) {
+            const me = latestMatch.players?.all_players?.find(p => p.name?.toLowerCase() === NAME.toLowerCase() && p.tag?.toLowerCase() === TAG.toLowerCase());
+            if (me) {
+              const myTeam = me.team ? me.team.toLowerCase() : '';
+              const redWon = latestMatch.teams?.red?.has_won;
+              const blueWon = latestMatch.teams?.blue?.has_won;
+
+              if ((myTeam === 'red' && redWon) || (myTeam === 'blue' && blueWon)) {
+                sessionWins++;
+              } else {
+                sessionLosses++;
+              }
+            }
+          }
+          lastMatchId = matchId;
+        }
+
+        document.getElementById('wins').innerText = `${sessionWins}W`;
+        document.getElementById('losses').innerText = `${sessionLosses}L`;
+      }
+    }
+
+    // Arayüzün donmasını engellemek için arka planda tetikleme
+    setTimeout(() => {
+      fetchRank();
+      fetchMatchTracker();
+      setInterval(() => {
+        fetchRank();
+        fetchMatchTracker();
+      }, 30000);
+    }, 300);
+  </script>
+</body>
+</html>
